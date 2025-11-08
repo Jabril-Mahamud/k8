@@ -1,14 +1,15 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: postgres  # 👈 This becomes the DNS name! Other pods use "postgres" to connect
+  name: postgres
+  namespace: dev
   labels:
     app: postgres
 spec:
-  type: ClusterIP  # 👈 Internal only - we don't need external access to our DB
+  type: ClusterIP
   selector:
-    app: postgres  # 👈 This matches our Deployment's labels
+    app: postgres
   ports:
-  - port: 5432  # 👈 The port other services will use
-    targetPort: 5432  # 👈 The port on the pod (where PostgreSQL is listening)
+  - port: 5432
+    targetPort: 5432
     name: postgres
