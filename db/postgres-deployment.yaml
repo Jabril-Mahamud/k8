@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  labels:
+    app: postgres
+    tier: database
+spec:
+  replicas: 1  # 👈 Database = only 1 replica (can't have multiple writing to same storage easily)
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+        tier: database
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15-alpine  # 👈 Small, fast PostgreSQL image
+        ports:
+        - containerPort: 5432  # 👈 PostgreSQL's default port
+          name: postgres
+        envFrom:  # 👈 This loads ALL keys from the secret as environment variables!
+        - secretRef:
+            name: postgres-secret
+        resources:  # 👈 Setting limits prevents the DB from eating all memory
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
