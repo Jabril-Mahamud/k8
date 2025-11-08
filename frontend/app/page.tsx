@@ -14,28 +14,43 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     setMounted(true);
     fetchData();
   }, []);
 
-  const fetchData = async () => {
+  const fetchData = async (currentRetry = 0) => {
+    const maxRetries = 5;
+    const retryDelay = 2000; // 2 seconds
+
     try {
       setLoading(true);
+      setError(null);
+      setRetryCount(currentRetry);
 
       const dbRes = await fetch('/api/test-db');
+      if (!dbRes.ok) throw new Error('Backend not ready');
       const dbData = await dbRes.json();
       setDbStatus(dbData);
 
       const usersRes = await fetch('/api/users');
+      if (!usersRes.ok) throw new Error('Backend not ready');
       const usersData = await usersRes.json();
       setUsers(usersData);
 
       setLoading(false);
+      setRetryCount(0);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch data');
-      setLoading(false);
+      if (currentRetry < maxRetries) {
+        // Retry after delay
+        console.log(`Retry ${currentRetry + 1}/${maxRetries} in ${retryDelay}ms...`);
+        setTimeout(() => fetchData(currentRetry + 1), retryDelay);
+      } else {
+        setError(err instanceof Error ? err.message : 'Failed to fetch data after multiple retries');
+        setLoading(false);
+      }
     }
   };
 
@@ -72,12 +87,24 @@ export default function Home() {
             {loading ? (
               <div className="flex items-center gap-2 text-slate-500">
                 <div className="w-4 h-4 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin"></div>
-                <span>Connecting...</span>
+                <span>
+                  {retryCount > 0
+                    ? `Connecting... (Retry ${retryCount}/5)`
+                    : 'Connecting...'}
+                </span>
               </div>
             ) : error ? (
-              <div className="flex items-center gap-2 text-red-600">
-                <span>❌</span>
-                <span className="text-sm">{error}</span>
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-red-600">
+                  <span>❌</span>
+                  <span className="text-sm">{error}</span>
+                </div>
+                <button
+                  onClick={() => fetchData()}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Retry Connection
+                </button>
               </div>
             ) : (
               <div className="space-y-3">
@@ -93,7 +120,7 @@ export default function Home() {
                   </div>
                 </div>
               </div>
-            )}implify th
+            )}
           </div>
 
           {/* Quick Stats */}
